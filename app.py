@@ -16,6 +16,9 @@ def remove():
     image = request.json.get("image")
     mask = request.json.get("mask")
 
+    if not image or not mask:
+        return jsonify({"error": "Нет данных"})
+
     res = requests.post(
         "https://api.replicate.com/v1/predictions",
         headers={
