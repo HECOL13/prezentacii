@@ -6,7 +6,7 @@ import time
 app = Flask(__name__)
 
 import os
-API_TOKEN = os.getenv("API_TOKEN")
+API_TOKEN = os.getenv("r8_cuWUgDMRDihgFKC4JhUee1JFQfVdheu39mu4x")
 
 @app.route("/remove", methods=["POST"])
 def remove():
