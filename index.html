@@ -6,38 +6,91 @@
 
 <style>
 body {
-  background: #111;
+  margin: 0;
+  background: #0f172a;
   color: white;
-  text-align: center;
   font-family: Arial;
+  text-align: center;
+}
+
+h1 {
+  margin-top: 20px;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.canvas-wrapper {
+  position: relative;
+  margin-top: 20px;
 }
 
 canvas {
-  border: 2px solid #444;
-  margin-top: 10px;
-  cursor: crosshair;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+#maskCanvas {
+  position: absolute;
+  left: 0;
+  top: 0;
 }
 
 .controls {
-  margin-top: 10px;
+  margin-top: 20px;
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 12px;
+}
+
+button {
+  padding: 10px 15px;
+  margin: 5px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: #3b82f6;
+  color: white;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #2563eb;
+}
+
+input[type="range"] {
+  width: 150px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>🧠 Удали водяной знак (кистью)</h2>
+<h1>🧠 AI удаление водяного знака</h1>
 
-<input type="file" id="upload"><br>
+<div class="container">
 
-<canvas id="imageCanvas"></canvas>
-<canvas id="maskCanvas" style="position:absolute; left:0; top:0;"></canvas>
+<input type="file" id="upload">
+
+<div class="canvas-wrapper">
+  <canvas id="imageCanvas"></canvas>
+  <canvas id="maskCanvas"></canvas>
+</div>
 
 <div class="controls">
-  Размер кисти:
-  <input type="range" id="size" min="5" max="50" value="20">
-  <br>
-  <button onclick="send()">Удалить AI</button>
+  <div>
+    Размер кисти:
+    <input type="range" id="size" min="5" max="60" value="25">
+  </div>
+
+  <button onclick="clearMask()">Очистить маску</button>
+  <button onclick="removeWatermark()">Удалить AI</button>
+  <button onclick="download()">Скачать результат</button>
+</div>
+
 </div>
 
 <script>
@@ -48,7 +101,7 @@ const imgCtx = imgCanvas.getContext('2d');
 const maskCtx = maskCanvas.getContext('2d');
 
 let drawing = false;
-let brush = 20;
+let brush = 25;
 let img = new Image();
 
 document.getElementById('size').oninput = e => brush = e.target.value;
@@ -78,13 +131,19 @@ maskCanvas.onmouseup = () => drawing = false;
 maskCanvas.onmousemove = function(e){
   if(!drawing) return;
 
-  maskCtx.fillStyle = "white";
+  maskCtx.fillStyle = "rgba(255,255,255,0.6)";
   maskCtx.beginPath();
   maskCtx.arc(e.offsetX, e.offsetY, brush, 0, Math.PI*2);
   maskCtx.fill();
 };
 
-async function send(){
+// 🔥 очистка маски
+function clearMask(){
+  maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+}
+
+// 🔥 отправка в AI
+async function removeWatermark(){
   const image = imgCanvas.toDataURL();
   const mask = maskCanvas.toDataURL();
 
@@ -101,7 +160,16 @@ async function send(){
 
   result.onload = () => {
     imgCtx.drawImage(result, 0, 0);
+    clearMask();
   }
+}
+
+// 🔥 скачать результат
+function download(){
+  const link = document.createElement('a');
+  link.download = "result.png";
+  link.href = imgCanvas.toDataURL();
+  link.click();
 }
 </script>
 
