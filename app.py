@@ -1,11 +1,3 @@
-
----
-
-## 🔹 ШАГ 3 — вставь ЧИСТЫЙ код
-
-Должно быть **ровно так (без ```):**
-
-```python
 from flask import Flask, request, jsonify
 import requests
 import time
@@ -13,7 +5,7 @@ import os
 
 app = Flask(__name__)
 
-API_TOKEN = os.getenv("API_TOKEN")
+API_TOKEN = os.getenv("r8_cuWUgDMRDihgFKC4JhUee1JFQfVdheu39mu4x")
 
 @app.route("/")
 def home():
@@ -22,9 +14,7 @@ def home():
 @app.route("/remove", methods=["POST"])
 def remove():
     image = request.json.get("image")
-
-    if not image:
-        return jsonify({"error": "Нет изображения"})
+    mask = request.json.get("mask")
 
     res = requests.post(
         "https://api.replicate.com/v1/predictions",
@@ -36,6 +26,7 @@ def remove():
             "version": "stability-ai/stable-diffusion-inpainting",
             "input": {
                 "image": image,
+                "mask": mask,
                 "prompt": "remove watermark, clean background"
             }
         }
@@ -52,7 +43,7 @@ def remove():
             return jsonify({"result": r["output"][0]})
 
         if r["status"] == "failed":
-            return jsonify({"error": "AI ошибка"})
+            return jsonify({"error": "AI error"})
 
         time.sleep(2)
 
