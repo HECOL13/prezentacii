@@ -1,4 +1,3 @@
-```python
 from flask import Flask, request, jsonify
 import requests
 import time
@@ -51,4 +50,3 @@ def remove():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
-```
