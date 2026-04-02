@@ -2,17 +2,23 @@
 from flask import Flask, request, jsonify
 import requests
 import time
+import os
 
 app = Flask(__name__)
 
-import os
 API_TOKEN = os.getenv("r8_cuWUgDMRDihgFKC4JhUee1JFQfVdheu39mu4x")
+
+@app.route("/")
+def home():
+    return "Server is working"
 
 @app.route("/remove", methods=["POST"])
 def remove():
-    image = request.json["image"]
+    image = request.json.get("image")
 
-    # создаём задачу
+    if not image:
+        return jsonify({"error": "Нет изображения"})
+
     res = requests.post(
         "https://api.replicate.com/v1/predictions",
         headers={
@@ -23,14 +29,13 @@ def remove():
             "version": "stability-ai/stable-diffusion-inpainting",
             "input": {
                 "image": image,
-                "prompt": "remove watermark, clean image"
+                "prompt": "remove watermark, clean background"
             }
         }
     ).json()
 
     get_url = res["urls"]["get"]
 
-    # ждём результат
     while True:
         r = requests.get(get_url, headers={
             "Authorization": f"Token {API_TOKEN}"
@@ -44,5 +49,6 @@ def remove():
 
         time.sleep(2)
 
-app.run(host="0.0.0.0", port=10000)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
 ```
