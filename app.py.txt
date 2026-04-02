@@ -1,0 +1,47 @@
+```python
+from flask import Flask, request, jsonify
+import requests
+import time
+
+app = Flask(__name__)
+
+API_TOKEN = "ВСТАВЬ_СЮДА_СВОЙ_КЛЮЧ"
+
+@app.route("/remove", methods=["POST"])
+def remove():
+    image = request.json["image"]
+
+    # создаём задачу
+    res = requests.post(
+        "https://api.replicate.com/v1/predictions",
+        headers={
+            "Authorization": f"Token {API_TOKEN}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "version": "stability-ai/stable-diffusion-inpainting",
+            "input": {
+                "image": image,
+                "prompt": "remove watermark, clean image"
+            }
+        }
+    ).json()
+
+    get_url = res["urls"]["get"]
+
+    # ждём результат
+    while True:
+        r = requests.get(get_url, headers={
+            "Authorization": f"Token {API_TOKEN}"
+        }).json()
+
+        if r["status"] == "succeeded":
+            return jsonify({"result": r["output"][0]})
+
+        if r["status"] == "failed":
+            return jsonify({"error": "AI ошибка"})
+
+        time.sleep(2)
+
+app.run(host="0.0.0.0", port=10000)
+```
