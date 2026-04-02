@@ -1,0 +1,86 @@
+```html id="ai_front"
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>AI удаление водяного знака</title>
+
+<style>
+body {
+  background: #111;
+  color: white;
+  text-align: center;
+  font-family: Arial;
+}
+
+canvas {
+  border: 2px solid #444;
+  margin-top: 10px;
+  cursor: crosshair;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🧠 AI удаление водяного знака</h2>
+
+<input type="file" id="upload"><br>
+<canvas id="canvas"></canvas><br>
+
+<button onclick="sendToAI()">Удалить через AI</button>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let img = new Image();
+
+document.getElementById('upload').onchange = function(e){
+  const reader = new FileReader();
+
+  reader.onload = function(event){
+    img.onload = function(){
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+    }
+    img.src = event.target.result;
+  }
+
+  reader.readAsDataURL(e.target.files[0]);
+};
+
+async function sendToAI(){
+  const dataUrl = canvas.toDataURL();
+
+  const res = await fetch("https://your-server.onrender.com/remove", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ image: dataUrl })
+  });
+
+  const data = await res.json();
+
+  const resultImg = new Image();
+  resultImg.src = data.result;
+
+  resultImg.onload = () => {
+    ctx.drawImage(resultImg, 0, 0);
+  }
+}
+</script>
+
+</body>
+</html>
+```
