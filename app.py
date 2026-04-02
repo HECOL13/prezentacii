@@ -1,54 +1,48 @@
-from flask import Flask, request, jsonify
-import requests
-import time
+from flask import Flask, request, jsonify, send_file
+from pptx import Presentation
+from PIL import Image
 import os
+import uuid
 
 app = Flask(__name__)
 
-API_TOKEN = os.getenv("r8_cuWUgDMRDihgFKC4JhUee1JFQfVdheu39mu4x")
+UPLOAD_FOLDER = "uploads"
+OUTPUT_FOLDER = "output"
 
-@app.route("/")
-def home():
-    return "Server is working"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-@app.route("/remove", methods=["POST"])
-def remove():
-    image = request.json.get("image")
-    mask = request.json.get("mask")
+# 🔥 загрузка презентации
+@app.route("/upload", methods=["POST"])
+def upload():
+    file = request.files["file"]
+    file_id = str(uuid.uuid4())
+    path = os.path.join(UPLOAD_FOLDER, file_id + ".pptx")
+    file.save(path)
 
-    if not image or not mask:
-        return jsonify({"error": "Нет данных"})
+    prs = Presentation(path)
 
-    res = requests.post(
-        "https://api.replicate.com/v1/predictions",
-        headers={
-            "Authorization": f"Token {API_TOKEN}",
-            "Content-Type": "application/json"
-        },
-        json={
-            "version": "stability-ai/stable-diffusion-inpainting",
-            "input": {
-                "image": image,
-                "mask": mask,
-                "prompt": "remove watermark, clean background"
-            }
-        }
-    ).json()
+    slides = []
 
-    get_url = res["urls"]["get"]
+    for i, slide in enumerate(prs.slides):
+        for shape in slide.shapes:
+            if shape.shape_type == 13:  # IMAGE
+                image = shape.image
+                img_path = os.path.join(UPLOAD_FOLDER, f"{file_id}_{i}.png")
+                
+                with open(img_path, "wb") as f:
+                    f.write(image.blob)
 
-    while True:
-        r = requests.get(get_url, headers={
-            "Authorization": f"Token {API_TOKEN}"
-        }).json()
+                slides.append(img_path)
 
-        if r["status"] == "succeeded":
-            return jsonify({"result": r["output"][0]})
+    return jsonify({
+        "id": file_id,
+        "slides": slides
+    })
 
-        if r["status"] == "failed":
-            return jsonify({"error": "AI error"})
 
-        time.sleep(2)
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+# 🔥 скачать готовую презентацию
+@app.route("/download/<file_id>")
+def download(file_id):
+    path = os.path.join(OUTPUT_FOLDER, file_id + ".pptx")
+    return send_file(path, as_attachment=True)
