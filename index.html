@@ -18,39 +18,53 @@ canvas {
   cursor: crosshair;
 }
 
-button {
-  padding: 10px;
-  margin: 5px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
+.controls {
+  margin-top: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>🧠 AI удаление водяного знака</h2>
+<h2>🧠 Удали водяной знак (кистью)</h2>
 
 <input type="file" id="upload"><br>
-<canvas id="canvas"></canvas><br>
 
-<button onclick="sendToAI()">Удалить через AI</button>
+<canvas id="imageCanvas"></canvas>
+<canvas id="maskCanvas" style="position:absolute; left:0; top:0;"></canvas>
+
+<div class="controls">
+  Размер кисти:
+  <input type="range" id="size" min="5" max="50" value="20">
+  <br>
+  <button onclick="send()">Удалить AI</button>
+</div>
 
 <script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+const imgCanvas = document.getElementById('imageCanvas');
+const maskCanvas = document.getElementById('maskCanvas');
 
+const imgCtx = imgCanvas.getContext('2d');
+const maskCtx = maskCanvas.getContext('2d');
+
+let drawing = false;
+let brush = 20;
 let img = new Image();
+
+document.getElementById('size').oninput = e => brush = e.target.value;
 
 document.getElementById('upload').onchange = function(e){
   const reader = new FileReader();
 
   reader.onload = function(event){
     img.onload = function(){
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
+      imgCanvas.width = img.width;
+      imgCanvas.height = img.height;
+
+      maskCanvas.width = img.width;
+      maskCanvas.height = img.height;
+
+      imgCtx.drawImage(img, 0, 0);
     }
     img.src = event.target.result;
   }
@@ -58,24 +72,35 @@ document.getElementById('upload').onchange = function(e){
   reader.readAsDataURL(e.target.files[0]);
 };
 
-async function sendToAI(){
-  const dataUrl = canvas.toDataURL();
+maskCanvas.onmousedown = () => drawing = true;
+maskCanvas.onmouseup = () => drawing = false;
 
-  const res = await fetch("https://your-server.onrender.com/remove", {
+maskCanvas.onmousemove = function(e){
+  if(!drawing) return;
+
+  maskCtx.fillStyle = "white";
+  maskCtx.beginPath();
+  maskCtx.arc(e.offsetX, e.offsetY, brush, 0, Math.PI*2);
+  maskCtx.fill();
+};
+
+async function send(){
+  const image = imgCanvas.toDataURL();
+  const mask = maskCanvas.toDataURL();
+
+  const res = await fetch("https://ai-watermark.onrender.com/remove", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ image: dataUrl })
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ image, mask })
   });
 
   const data = await res.json();
 
-  const resultImg = new Image();
-  resultImg.src = data.result;
+  const result = new Image();
+  result.src = data.result;
 
-  resultImg.onload = () => {
-    ctx.drawImage(resultImg, 0, 0);
+  result.onload = () => {
+    imgCtx.drawImage(result, 0, 0);
   }
 }
 </script>
