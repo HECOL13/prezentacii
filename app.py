@@ -1,3 +1,11 @@
+
+---
+
+## 🔹 ШАГ 3 — вставь ЧИСТЫЙ код
+
+Должно быть **ровно так (без ```):**
+
+```python
 from flask import Flask, request, jsonify
 import requests
 import time
@@ -5,7 +13,7 @@ import os
 
 app = Flask(__name__)
 
-API_TOKEN = os.getenv("r8_cuWUgDMRDihgFKC4JhUee1JFQfVdheu39mu4x")
+API_TOKEN = os.getenv("API_TOKEN")
 
 @app.route("/")
 def home():
